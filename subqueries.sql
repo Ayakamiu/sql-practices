@@ -50,7 +50,7 @@ and salesman_id = (select salesman_id
 	where name = 'Mc Lyon');
 
 -- if do not use subqueries
--- join  where nam = 'Mc Lyon'
+-- join  where name = 'Mc Lyon'
 
 
 /*8. Write a query to count the customers with grades above New York's average.*/
@@ -204,19 +204,90 @@ where not exists (select * from customer as c2
 
 select * 
 from salesman
-where salesman_id in (select a.salesman_id
-					from (select *
-					from customer 
+where salesman_id in (select distinct o.salesman_id
+					from orders as o, (select customer_id
+					from orders 
 					group by customer_id
-					having count(*) > 1) as a);
+					having count(*) > 1) as t
+					where t.customer_id = o.customer_id)
+order by salesman_id;
 -- when do I have to give alias to a table?
 -- Like all subqueries, those used in the FROM clause to create a derived table are enclosed by parenthesis.  
 -- Unlike other subqueries though, a derived table must be aliased so that you can reference its results.
 -- in short, subqueries in from clause must have alias
- 
-/*18. Write a query that extract the rows of all salesmen who have customers with more than one orders.
+-- solution:
+SELECT * 
+FROM salesman a 
+WHERE EXISTS     
+   (SELECT * FROM customer b     
+    WHERE a.salesman_id=b.salesman_id     
+	 AND 1<             
+	     (SELECT COUNT (*)              
+		  FROM orders             
+		  WHERE orders.customer_id =            
+		  b.customer_id));
+-- exists faster than in?
+
+/*19. Write a query to find salesmen with all information 
+who lives in the city where any of the customers lives.
+*/
+-- wrong:
+select * 
+from salesman
+where city in (select city 
+				from customer
+				where customer.salesman_id = salesman.salesman_id);
+-- this are the salesman who lives in his/her customer's city
+
+-- solution:
+-- use any operator
+select * 
+from salesman 
+where city = any(select city from customer);
+
+/*20. Write a query to find all the salesmen for whom there are customers that follow them.
+*/
+select *
+from salesman 
+where city in
+    (select city
+     from customer);
+-- what's the difference?
+-- "Using IN with a subquery is functionally equivalent to using ANY,
+-- and returns TRUE if a match is found in the set returned by the subquery."
+-- "We think you will agree that IN is more intuitive than ANY, which is
+-- why IN is almost always used in such situations."
+
+
+/*21. Write a query to display the salesmen which name are alphabetically
+lower than the name of the customers
+*/
+select * 
+from salesman as s
+where exists
+(select * 
+from customer as c
+where s.name < c.cust_name);
+
+/*22. Write a query to display the customers who have a greater gradation than
+any customer who belongs to the alphabetically lower than the city New York.
+*/
+-- ???
+select * 
+from customer
+where grade > any(select grade 
+				from customer
+				where city < 'New York');
+
+/*23. Write a query to display all the orders that had amounts 
+that were greater than at least one of the orders on September 10th 2012.
 */
 
+select * 
+from orders
+where purch_amt > any(select purch_amt 
+						from orders
+						where ord_date = "2012-09-10");
 
 
 
