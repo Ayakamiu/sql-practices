@@ -93,3 +93,149 @@ select *
 from customer a, orders b
 where a.customer_id = b.customer_id
 and b.ord_date = '2012-08-17';
+
+/*11. Write a query to find the name and numbers of all salesmen who had more than one customer. 
+*/
+
+select s.salesman_id, s.name
+from salesman as s
+where s.salesman_id in (select salesman_id
+	from customer
+	group by salesman_id
+	having count(distinct customer_id) > 1); 
+-- solution:
+SELECT salesman_id, name 
+FROM salesman a 
+WHERE 1 < 
+    (SELECT COUNT(*) 
+     FROM customer 
+     WHERE salesman_id=a.salesman_id);
+-- use subquery to replace group by
+-- for each salesman_id in table a count the rows in customer table on the condition salesman_id = a.salesman_id
+
+/*12. Write a query to find all orders with order amounts which are above-average amounts for their customers.
+*/
+
+select *
+from orders 
+where purch_amt > (select avg(purch_amt)  from orders);     
+-- solution:
+SELECT * 
+FROM orders a
+WHERE purch_amt >
+    (SELECT AVG(purch_amt) FROM orders b 
+     WHERE b.customer_id = a.customer_id);
+-- the average purch_amt for each customer
+-- don't need group by
+
+/*13. Write a queries to find all orders with order amounts which are on 
+or above-average amounts for their customers.
+*/
+
+select * 
+from orders as o1
+where purch_amt >= (select avg(purch_amt)
+					from orders as o2
+					where o2.customer_id = o1.customer_id);
+
+/*14. Write a query to find the sums of the amounts from the orders table, grouped by date, 
+eliminating all those dates where the sum was not at least 1000.00 above the maximum order
+amount for that date. 
+*/
+
+select sum(purch_amt) 
+from orders as o1
+where 
+
+/*15. Write a query to extract the data from the customer table if and only if one or
+more of the customers in the customer table are located in London
+*/
+-- if and only if?
+-- use the "exists" keywords
+-- exists checks rows; if returns one or more records
+select *
+from customer 
+where exists
+(select * 
+from customer
+where city = "London");
+
+/*16. Write a query to find the salesmen who have multiple customers.
+*/
+select *
+from salesman as s
+where salesman_id in (select salesman_id
+					 from customer
+					 group by salesman_id
+					 having count(*) > 1);
+-- solution:
+SELECT * 
+FROM salesman 
+WHERE salesman_id IN (
+   SELECT DISTINCT salesman_id 
+   FROM customer a 
+   WHERE EXISTS (
+      SELECT * 
+      FROM customer b 
+      WHERE b.salesman_id=a.salesman_id 
+      AND b.cust_name<>a.cust_name));
+-- do not use group by
+
+/*17. Write a query to find all the salesmen who worked for only one customer. 
+*/
+-- use group by
+select *
+from salesman
+where salesman_id in (select salesman_id 
+	from customer 
+	group by salesman_id 
+	having count(*) = 1);
+-- do not use group by
+select * 
+from salesman
+where salesman_id in (select * 
+from customer as c1
+where not exists (select * from customer as c2
+				where c1.customer_id = c2.customer_id
+				and c1.salesman_id <> c2.salesman_id));
+
+/*18. Write a query that extract the rows of all salesmen who have customers with more than one orders.
+*/
+
+select * 
+from salesman
+where salesman_id in (select a.salesman_id
+					from (select *
+					from customer 
+					group by customer_id
+					having count(*) > 1) as a);
+-- when do I have to give alias to a table?
+-- Like all subqueries, those used in the FROM clause to create a derived table are enclosed by parenthesis.  
+-- Unlike other subqueries though, a derived table must be aliased so that you can reference its results.
+-- in short, subqueries in from clause must have alias
+ 
+/*18. Write a query that extract the rows of all salesmen who have customers with more than one orders.
+*/
+
+
+
+
+-- SQL Query:
+SELECT DISTINCT t1.customer_id -- get unique customer IDs
+FROM 
+(SELECT ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY order_date ASC) AS rownum, * 
+FROM orders) AS t1 
+-- use the row_number() window function to add a “row number” column to identify the number of orders from a certain customer.
+JOIN 
+(SELECT ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY order_date ASC) AS rownum, * 
+FROM orders) AS t2 
+-- the same table as “t1”; will be used in self join later.
+ON t2.rownum = t1.rownum + 1 AND t2.customer_id = t1.customer_id -- self join the two tables to get the “previous order” on the same row as the certain order
+WHERE t2.quantity < t1.quantity AND -- set the condition that the quantity of the previous order is greater than the certain order
+t1.rownum >= (SELECT MAX(t3.rownum) - 2 
+                   FROM 
+(SELECT ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY order_date ASC) AS rownum, * FROM orders) AS t3 
+WHERE t3.customer_id = t1.customer_id 
+GROUP BY t3.customer_id)
+GROUP BY t1.customer_id
+HAVING count(*) = 2;
