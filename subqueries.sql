@@ -243,7 +243,7 @@ where city in (select city
 -- use any operator
 select * 
 from salesman 
-where city = any(select city from customer);
+where city = any (select city from customer);
 
 /*20. Write a query to find all the salesmen for whom there are customers that follow them.
 */
@@ -275,19 +275,28 @@ any customer who belongs to the alphabetically lower than the city New York.
 -- ???
 select * 
 from customer
-where grade > any(select grade 
+where grade > any (select grade 
 				from customer
 				where city < 'New York');
 
 /*23. Write a query to display all the orders that had amounts 
 that were greater than at least one of the orders on September 10th 2012.
 */
-
 select * 
 from orders
-where purch_amt > any(select purch_amt 
+where purch_amt > any (select purch_amt 
+					from orders
+					where ord_date = "2012-09-10");
+
+/*24. Write a query to display all orders with an amount smaller than any amount for a customer in London.
+*/
+select * 
+from orders
+where purch_amt < any (select purch_amt
 						from orders
-						where ord_date = "2012-09-10");
+						inner join customer
+						on orders.customer_id = customer.customer_id
+						where city = 'London');
 
 
 
