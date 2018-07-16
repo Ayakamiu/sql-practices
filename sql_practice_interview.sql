@@ -56,11 +56,74 @@ having count( salesperson_id ) >1;
 /* LeetCode 597 Friend request overall acceptance rate */
 -- q1 what is the overall acceptance rate
 -- overall rate, don't have to be from the same person 
+-- solution 1
 select 
-isnull(
-
-
-)
-
--- SQL coalesce() function
+round(isnull(
+	select count(*) from (select distinct requester_id, accepter_id from request_accepted) as a /  
+	select count(*) from (select distinct sender_id, send_to_id from friend_request) as b, 0)
+, 2) as accept_rate;
+-- solution 2
+select coalesce(round(count(distinct requester_id, accepter_id) /
+	count(distinct sender_id, send_to_id),2),0) as accept_rate
+from friend_request, request_accepted
+-- SQL coalesce() and isnull() function
 -- http://www.itprotoday.com/software-development/coalesce-vs-isnull
+-- coalesce(null, null) returns error; isnull(null, null) returns null
+
+-- Can you write a query to return the accept rate but for every month?
+
+-- How about the cumulative accept rate for every day?
+-- To find cumulative sum first you need to self join on condition >=
+-- select t1.*,t2.* from testsum t1 inner join testsum t2 on t1.ID>=t2.ID
+-- http://www.sqlservercentral.com/blogs/querying-microsoft-sql-server/2013/10/19/cumulative-sum-in-sql-server-/
+-- get the table of number of requests and accepts for each day first
+
+select the_date, sum(t2.num_accept) as cum_accept, sum(t2.num_request) as cum_request
+from
+	((select count(distinct requester_id, accepter_id) as num_accept, accept_date as the_date
+	from request_accepted
+	group by accept_date) as a
+	inner join
+	(select count(distinct sender_id, send_to_id) as num_request, request_date as the_date
+	from friend_request
+	group by request_date) as b
+	on a.accept_date = b.request_date) as t1
+inner join 
+	((select count(distinct requester_id, accepter_id) as num_accept, accept_date as the_date
+	from request_accepted
+	group by accept_date) as c
+	inner join
+	(select count(distinct sender_id, send_to_id) as num_request, request_date as the_date
+	from friend_request
+	group by request_date) as d
+	on c.accept_date = d.request_date) as t2
+on t1.the_date >= t2.the_date
+group by the_date;
+
+/*Friend Requests II: Who Has the Most Friends */
+select ids as id, cnt as num
+from
+(
+select ids, count(*) as cnt
+   from
+   (
+        select requester_id as ids from request_accepted
+        union all
+        select accepter_id from request_accepted
+    ) as tbl1
+   group by ids
+   ) as tbl2
+order by cnt desc
+limit 1
+;
+
+-- Follow-up: In the real world, multiple people could have the same most number of friends, 
+-- can you find all these people in this case?
+
+
+
+
+
+
+
+
