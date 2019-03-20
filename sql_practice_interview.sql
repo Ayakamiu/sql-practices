@@ -119,6 +119,45 @@ limit 1
 
 -- Follow-up: In the real world, multiple people could have the same most number of friends, 
 -- can you find all these people in this case?
+select ids as id, cnt as num
+from
+(
+select count(*) as cnt
+   from
+   (
+        select requester_id as ids from request_accepted
+        union all
+        select accepter_id from request_accepted
+    ) as tbl1
+  	group by ids
+	order by cnt desc
+	limit 1)  as tbl2;
+
+
+2 tables related to online advertising:
+●	Advertiser_Info: advertiser_id, ad_id, ad_spend
+●	Ad_Info: ad_id, run_date, impressions, clicks, revenue      
+A.	Calculate the following metrics for each advertiser: CTR, cost per click, ROI (revenue/spend)
+
+
+1. CTR
+select adv.advertiser_id, sum(clicks) / sum(impressions) as CTR, sum(ad_spend) / sum(clicks) as CPC, 
+sum(revenue) / sum(spend) as ROI
+from AD_Info 
+inner join Advertiser_Info as adv
+on AD_Info.ad_id = adv.ad_id
+group by adv.advertiser_id;
+
+
+best ad based on ROI
+
+R: 
+library(tidyverse)
+
+advertiser_info %>% join(ad_info, on = ad_id ) %>% group_by(advertiser_id, ad_id) %>% summarize( max_ROI =max(sum(revenue) / sum(spend)) )
+
+select row_number(over spartition by )
+
 
 
 
